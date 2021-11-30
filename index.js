@@ -9,9 +9,8 @@ import { router1 } from "./admin.js";
 export const app = express();
 app.use(cors());
 app.use(express.json());
-const PORT = 4000;
 const MONGO_URL = 'mongodb://localhost';
-// const PORT = process.env.PORT;
+const PORT = process.env.PORT;
 // const MONGO_URL = process.env.MONGO_URL;
 export async function createConnection() {
   const client = new MongoClient(MONGO_URL)
