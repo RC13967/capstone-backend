@@ -8,12 +8,24 @@ router1.post("/getUser", async (request, response) => {
   const { email, password } = request.body;
   const client = await createConnection();
   const user = await client.db("capstone").collection("users").find({ email: email }).toArray();
+  var profileFile = await client.db("capstone").collection('profileUploads.files')
+      .find({ "_id": user[0].picture }).toArray();
+      let finalFile = "";
+    if (profileFile.length > 0) {
+        var chunks = await client.db("capstone").collection('profileUploads.chunks')
+      .find({ "files_id": user[0].picture }).sort({ n: 1 }).toArray();
+      let profileData = [];
+      for (let j = 0; j < chunks.length; j++) {
+        profileData.push(chunks[j].data.toString('base64'));
+      }
+      finalFile = 'data:' + profileFile[0].contentType + ';base64,'+ profileData.join('');
+    }
   if (user.length > 0) {
     const passwordstoredindb = user[0].password;
     const loginFormPassword = password;
     const ispasswordmatch = await bcrypt.compare(loginFormPassword, passwordstoredindb);
     if (ispasswordmatch) {
-      response.send({ message: "success" });
+      response.send({ message: "success", firstName:user[0].firstName, lastName:user[0].lastName, picture:finalFile });
     } else {
       response.send({ message: "invalid login" });
     }
@@ -73,7 +85,8 @@ router1.put("/activateUser/:email/:token", async (request, response) => {
   const user = await client.db("capstone").collection("inactiveusers").find({ email: email, token: token }).toArray();
   if (user.length > 0) {
     await client.db("capstone").collection("users").insertOne({
-      email: user[0].email, password: user[0].password, firstName: user[0].firstName, lastName: user[0].lastName
+      email: user[0].email, password: user[0].password, firstName: user[0].firstName, lastName: user[0].lastName,
+      picture:""
     });
     await client.db("capstone").collection("inactiveusers").deleteMany({ email: email, token: token });
     response.send({ message: 'activate account' });
