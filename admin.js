@@ -25,7 +25,8 @@ router1.post("/getUser", async (request, response) => {
     const loginFormPassword = password;
     const ispasswordmatch = await bcrypt.compare(loginFormPassword, passwordstoredindb);
     if (ispasswordmatch) {
-      response.send({ message: "success", firstName:user[0].firstName, lastName:user[0].lastName, picture:finalFile });
+      response.send({ message: "success", firstName:user[0].firstName, lastName:user[0].lastName, picture:finalFile,
+    userId:user[0]._id });
     } else {
       response.send({ message: "invalid login" });
     }

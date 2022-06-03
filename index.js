@@ -65,66 +65,68 @@ app.post("/globalPosts", async (request, response) => {
   const { email } = request.body;
   const client = await createConnection();
   const user = await client.db("capstone").collection("users").find({ "email": email }).toArray();
-  if (user.length > 0 ) {
-    const users = await client.db("capstone").collection("users").find({ }).toArray();
+  if (user.length > 0) {
+    const users = await client.db("capstone").collection("users").find({}).toArray();
     let posts = [];
-    for (let i = 0; i < users.length; i++){
-      if(users[i].posts){
-    
-    for (let j = 0; j < users[i].posts.length; j++) {
-      var file = await client.db("capstone").collection('uploads.files')
-      .find({ "_id": users[i].posts[j].postId }).toArray();
-      var fileType = "";
-      if (file.length > 0){
-      var chunks = await client.db("capstone").collection('uploads.chunks')
-      .find({ "files_id": users[i].posts[j].postId }).sort({ n: 1 }).toArray();
-      let fileData = [];
-      for (let k = 0; k < chunks.length; k++) {
-        fileData.push(chunks[k].data.toString('base64'));
+    for (let i = 0; i < users.length; i++) {
+      if (users[i].posts) {
+
+        for (let j = 0; j < users[i].posts.length; j++) {
+          var file = await client.db("capstone").collection('uploads.files')
+            .find({ "_id": users[i].posts[j].postId }).toArray();
+          var fileType = "";
+          if (file.length > 0) {
+            var chunks = await client.db("capstone").collection('uploads.chunks')
+              .find({ "files_id": users[i].posts[j].postId }).sort({ n: 1 }).toArray();
+            let fileData = [];
+            for (let k = 0; k < chunks.length; k++) {
+              fileData.push(chunks[k].data.toString('base64'));
+            }
+            let finalFile = 'data:' + file[0].contentType + ';base64,' + fileData.join('');
+            fileType = file[0].contentType;
+            file = finalFile;
+          }
+          var userPicFile = await client.db("capstone").collection('profileUploads.files')
+            .find({ "_id": users[i].picture }).toArray();
+          let finalPicFile = "";
+          if (userPicFile.length > 0) {
+            let userPicChunks = await client.db("capstone").collection('profileUploads.chunks')
+              .find({ "files_id": users[i].picture }).toArray();
+            let pictureFileData = [];
+            for (let l = 0; l < userPicChunks.length; l++) {
+              pictureFileData.push(userPicChunks[l].data.toString('base64'));
+            }
+            finalPicFile = 'data:' + userPicFile[0].contentType + ';base64,' + pictureFileData.join('');
+          }
+          var liked = false;
+          var disliked = false;
+          if (users[i].posts[j].liked.filter((el) => el.toString() === user[0]._id.toString()).length > 0) {
+            liked = true
+          } else if (users[i].posts[j].disliked.filter((el) => el.toString() === user[0]._id.toString()).length > 0) {
+            disliked = true
+          }
+          posts.push({
+            fileType: fileType,
+            file: file,
+            postId: users[i].posts[j].postId,
+            postText: users[i].posts[j].postText,
+            likes: users[i].posts[j].likes,
+            dislikes: users[i].posts[j].dislikes,
+            comments: users[i].posts[j].comments,
+            commentDetails: users[i].posts[j].commentDetails,
+            uploadDate: users[i].posts[j].uploadDate,
+            liked: liked,
+            disliked: disliked,
+            likedList: users[i].posts[j].liked,
+            dislikedList: users[i].posts[j].disliked,
+            postedUserName: users[i].firstName + users[i].lastName,
+            postedUserPic: finalPicFile,
+            postedUserId:users[i]._id
+          })
+        }
       }
-      let finalFile = 'data:' + file[0].contentType + ';base64,'+ fileData.join('');
-      fileType = file[0].contentType;
-      file = finalFile;
-    } 
-    var userPicFile = await client.db("capstone").collection('profileUploads.files')
-      .find({ "_id": users[i].picture }).toArray();
-      let finalPicFile = "";
-      if (userPicFile.length > 0){
-        let userPicChunks = await client.db("capstone").collection('profileUploads.chunks')
-    .find({ "files_id": users[i].picture}).toArray();
-    let pictureFileData = [];
-      for (let l = 0; l < userPicChunks.length; l++) {
-        pictureFileData.push(userPicChunks[l].data.toString('base64'));
-      }
-      finalPicFile = 'data:' + userPicFile[0].contentType + ';base64,'+ pictureFileData.join('');
     }
-      var liked = false;
-      var disliked = false;
-      if( users[i].posts[j].liked.filter((el)=>el.toString() === user[0]._id.toString()).length > 0){
-        liked = true
-      } else if (users[i].posts[j].disliked.filter((el)=>el.toString() === user[0]._id.toString()).length > 0){
-        disliked = true
-      }
-      posts.push({
-        fileType:fileType,
-        file:file,
-        postId: users[i].posts[j].postId,
-        postText: users[i].posts[j].postText,
-        likes: users[i].posts[j].likes,
-        dislikes: users[i].posts[j].dislikes,
-        comments:users[i].posts[j].comments,
-        commentDetails:users[i].posts[j].commentDetails,
-        uploadDate: users[i].posts[j].uploadDate,
-        liked: liked,
-        disliked: disliked,
-        likedList: users[i].posts[j].liked,
-        dislikedList: users[i].posts[j].disliked,
-        postedUserName:users[i].firstName + users[i].lastName,
-        postedUserPic:finalPicFile,
-      })
-    }}
-  }
-    
+
     response.send(posts);
   }
   // var db = client.db('capstone');
@@ -143,37 +145,36 @@ app.post("/myPosts", async (request, response) => {
     let posts = [];
     for (let i = 0; i < user[0].posts.length; i++) {
       var file = await client.db("capstone").collection('uploads.files')
-      .find({ "_id": user[0].posts[i].postId }).toArray();
+        .find({ "_id": user[0].posts[i].postId }).toArray();
       var fileType = "";
-      if (file.length > 0){
-      var chunks = await client.db("capstone").collection('uploads.chunks')
-      .find({ "files_id": user[0].posts[i].postId }).sort({ n: 1 }).toArray();
-      let fileData = [];
-      for (let j = 0; j < chunks.length; j++) {
-        fileData.push(chunks[j].data.toString('base64'));
+      if (file.length > 0) {
+        var chunks = await client.db("capstone").collection('uploads.chunks')
+          .find({ "files_id": user[0].posts[i].postId }).sort({ n: 1 }).toArray();
+        let fileData = [];
+        for (let j = 0; j < chunks.length; j++) {
+          fileData.push(chunks[j].data.toString('base64'));
+        }
+        let finalFile = 'data:' + file[0].contentType + ';base64,' + fileData.join('');
+        fileType = file[0].contentType;
+        file = finalFile;
       }
-      let finalFile = 'data:' + file[0].contentType + ';base64,'+ fileData.join('');
-      fileType = file[0].contentType;
-      file = finalFile;
-    } 
-    var userPicFile = await client.db("capstone").collection('profileUploads.files')
-      .find({ "_id": user[0].picture }).toArray();
+      var userPicFile = await client.db("capstone").collection('profileUploads.files')
+        .find({ "_id": user[0].picture }).toArray();
       let finalPicFile = "";
-      if (userPicFile.length > 0){
-    let userPicChunks = await client.db("capstone").collection('profileUploads.chunks')
-    .find({ "files_id": user[0].picture}).toArray();
-    let pictureFileData = [];
-      for (let l = 0; l < userPicChunks.length; l++) {
-        pictureFileData.push(userPicChunks[l].data.toString('base64'));
+      if (userPicFile.length > 0) {
+        let userPicChunks = await client.db("capstone").collection('profileUploads.chunks')
+          .find({ "files_id": user[0].picture }).toArray();
+        let pictureFileData = [];
+        for (let l = 0; l < userPicChunks.length; l++) {
+          pictureFileData.push(userPicChunks[l].data.toString('base64'));
+        }
+        finalPicFile = 'data:' + userPicFile[0].contentType + ';base64,' + pictureFileData.join('');
       }
-      finalPicFile = 'data:' + userPicFile[0].contentType + ';base64,'+ pictureFileData.join('');
-    }
       var liked = false;
       var disliked = false;
-      var commented = false;
-      if( user[0].posts[i].liked.includes(user[0]._id)){
+      if (user[0].posts[i].liked.filter((el) => el.toString() === user[0]._id.toString()).length > 0) {
         liked = true
-      } else if (user[0].posts[i].disliked.includes(user[0]._id)){
+      } else if (user[0].posts[i].disliked.filter((el) => el.toString() === user[0]._id.toString()).length > 0) {
         disliked = true
       }
       posts.push({
@@ -184,17 +185,18 @@ app.post("/myPosts", async (request, response) => {
         postText: user[0].posts[i].postText,
         likes: user[0].posts[i].likes,
         dislikes: user[0].posts[i].dislikes,
-        comments:user[0].posts[i].comments,
-        commentDetails:user[0].posts[i].commentDetails,
+        comments: user[0].posts[i].comments,
+        commentDetails: user[0].posts[i].commentDetails,
         liked: liked,
         disliked: disliked,
         likedList: user[0].posts[i].liked,
         dislikedList: user[0].posts[i].disliked,
-        postedUserName:user[0].firstName + user[0].lastName,
-        postedUserPic:finalPicFile,
+        postedUserName: user[0].firstName + user[0].lastName,
+        postedUserPic: finalPicFile,
+        postedUserId:user[0]._id
       })
     };
-    
+
     response.send(posts);
   } else {
     response.send({});
@@ -212,7 +214,7 @@ app.put("/addPost", upload.single("file"), async (request, response) => {
   const { file } = request
   const client = await createConnection();
   let result;
-    result = await client.db("capstone").collection("users").updateOne({
+  result = await client.db("capstone").collection("users").updateOne({
     email: email
   },
     {
@@ -223,38 +225,60 @@ app.put("/addPost", upload.single("file"), async (request, response) => {
           postText: postText,
           likes: 0,
           dislikes: 0,
-          comments:0,
-          liked:[],
-          disliked:[],
-          commented:[],
-          commentDetails:[],
+          comments: 0,
+          liked: [],
+          disliked: [],
+          commented: [],
+          commentDetails: [],
         }
       }
     });
+
+});
+app.put("/deletePost", async (request, response) => {
+  const { email, post } = request.body;
+  const client = await createConnection();
+  let result = await client.db("capstone").collection("users").updateOne({
+    email: email
+  },
+    {
+      $pull: {
+        "posts": {
+          postId: ObjectId(post.postId),
+        }
+      }
+    });
+  response.send(result);
 
 });
 app.put("/addProfile", uploadProfile.single("profileFile"), async (request, response) => {
   const { email } = request.body;
   const { file } = request;
   const client = await createConnection();
+  let user = await client.db("capstone").collection("users").find({ "email": email }).toArray();
+  if (user[0].picture) {
+    await client.db("capstone").collection("profileUploads.files").deleteOne({ "_id": ObjectId(user[0].picture) });
+    await client.db("capstone").collection("profileUploads.chunks").deleteMany({ "files_id": ObjectId(user[0].picture) });
+  }
   const result = await client.db("capstone").collection("users").updateOne({
     email: email
   },
     {
       $set: {
-        "picture":file.id
+        "picture": file.id
       }
     });
-    var profileFile = await client.db("capstone").collection('profileUploads.files')
-      .find({ "_id": file.id }).toArray();
-    var chunks = await client.db("capstone").collection('profileUploads.chunks')
+
+  var profileFile = await client.db("capstone").collection('profileUploads.files')
+    .find({ "_id": file.id }).toArray();
+  var chunks = await client.db("capstone").collection('profileUploads.chunks')
     .find({ "files_id": file.id }).sort({ n: 1 }).toArray();
-    let profileData = [];
-    for (let j = 0; j < chunks.length; j++) {
-      profileData.push(chunks[j].data.toString('base64'));
-    }
-    let finalFile = 'data:' + profileFile[0].contentType + ';base64,'+ profileData.join('');
-    response.send({finalFile:finalFile});
+  let profileData = [];
+  for (let j = 0; j < chunks.length; j++) {
+    profileData.push(chunks[j].data.toString('base64'));
+  }
+  let finalFile = 'data:' + profileFile[0].contentType + ';base64,' + profileData.join('');
+  response.send({ finalFile: finalFile });
 });
 app.put("/likes", async (request, response) => {
   const { email, post } = request.body;
@@ -267,16 +291,16 @@ app.put("/likes", async (request, response) => {
   const client = await createConnection();
   const user = await client.db("capstone").collection("users").find({ "email": email }).toArray();
   let userId = user[0]._id;
-  if(liked == true){
+  if (liked == true) {
     liked = false
-    likedList = likedList.filter((el)=> el.toString() != userId.toString());
-    likes  -= 1
-  } else if(disliked == true){
+    likedList = likedList.filter((el) => el.toString() != userId.toString());
+    likes -= 1
+  } else if (disliked == true) {
     liked = true
     likedList.push(ObjectId(userId));
     likes += 1;
     disliked = false
-    dislikedList = dislikedList.filter((el)=> el.toString() != userId.toString());
+    dislikedList = dislikedList.filter((el) => el.toString() != userId.toString());
     dislikes -= 1;
   } else {
     liked = true;
@@ -284,7 +308,7 @@ app.put("/likes", async (request, response) => {
     likes += 1;
   }
   const result = await client.db("capstone").collection("users").updateOne({
-    posts : {$elemMatch:{postId: ObjectId(post.postId)}}
+    posts: { $elemMatch: { postId: ObjectId(post.postId) } }
   },
     {
       $set: {
@@ -294,7 +318,7 @@ app.put("/likes", async (request, response) => {
         "posts.$.disliked": dislikedList,
       }
     });
-    response.send(result);
+  response.send(result);
 });
 app.put("/dislikes", async (request, response) => {
   const { email, post } = request.body;
@@ -307,13 +331,13 @@ app.put("/dislikes", async (request, response) => {
   const client = await createConnection();
   const user = await client.db("capstone").collection("users").find({ "email": email }).toArray();
   let userId = user[0]._id;
-  if(post.disliked === true){
+  if (post.disliked === true) {
     disliked = false;
-    dislikedList =dislikedList.filter((el)=> el.toString() != userId.toString());
-    dislikes  -= 1;
-  } else if(post.liked === true){
+    dislikedList = dislikedList.filter((el) => el.toString() != userId.toString());
+    dislikes -= 1;
+  } else if (post.liked === true) {
     liked = false;
-    likedList = likedList.filter((el)=> el.toString() != userId.toString());
+    likedList = likedList.filter((el) => el.toString() != userId.toString());
     likes -= 1;
     disliked = true;
     dislikedList.push(userId);
@@ -324,7 +348,7 @@ app.put("/dislikes", async (request, response) => {
     dislikes += 1;
   }
   const result = await client.db("capstone").collection("users").updateOne({
-    posts : {$elemMatch:{postId: ObjectId(post.postId)}}
+    posts: { $elemMatch: { postId: ObjectId(post.postId) } }
   },
     {
       $set: {
@@ -334,7 +358,7 @@ app.put("/dislikes", async (request, response) => {
         "posts.$.disliked": dislikedList,
       }
     });
-    response.send(result);
+  response.send(result);
 
 });
 app.put("/comments", async (request, response) => {
@@ -348,29 +372,31 @@ app.put("/comments", async (request, response) => {
   let lastName = user[0].lastName;
   const userPicFile = await client.db("capstone").collection("profileUploads.files").find({ "_id": userPicId }).toArray();
   let finalPicFile = "";
-  if (userPicFile.length > 0){
+  if (userPicFile.length > 0) {
     const userPicChunks = await client.db("capstone").collection('profileUploads.chunks')
-    .find({ "files_id": userPicId}).toArray();
+      .find({ "files_id": userPicId }).toArray();
     let pictureFileData = [];
-      for (let i = 0; i < userPicChunks.length; i++) {
-        pictureFileData.push(userPicChunks[i].data.toString('base64'));
-      }
-      finalPicFile = 'data:' + userPicFile[0].contentType + ';base64,'+ pictureFileData.join('');
+    for (let i = 0; i < userPicChunks.length; i++) {
+      pictureFileData.push(userPicChunks[i].data.toString('base64'));
+    }
+    finalPicFile = 'data:' + userPicFile[0].contentType + ';base64,' + pictureFileData.join('');
   }
-  oldCommentDetails.push({firstName:firstName, lastName:lastName, picture:finalPicFile,userId:user[0]._id,
-   commentId:ObjectId(), commentedDate:new Date().toLocaleString(), comment:comment, 
-   likes:0, dislikes:0, likedList:[], dislikedList:[], replies:0, replyDetails:[]});
+  oldCommentDetails.push({
+    firstName: firstName, lastName: lastName, picture: finalPicFile, userId: user[0]._id,
+    commentId: ObjectId(), commentedDate: new Date().toLocaleString(), comment: comment,
+    likes: 0, dislikes: 0, likedList: [], dislikedList: [], replies: 0, replyDetails: []
+  });
 
   const result = await client.db("capstone").collection("users").updateOne({
-    posts : {$elemMatch:{postId: ObjectId(post.postId)}}
+    posts: { $elemMatch: { postId: ObjectId(post.postId) } }
   },
     {
       $set: {
         "posts.$.comments": comments + 1,
-        "posts.$.commentDetails":oldCommentDetails,
+        "posts.$.commentDetails": oldCommentDetails,
       }
     });
-    response.send(result);
+  response.send(result);
 });
 app.put("/commentLikes", async (request, response) => {
   const { commentDetails, postId, email } = request.body;
@@ -384,16 +410,16 @@ app.put("/commentLikes", async (request, response) => {
   const client = await createConnection();
   const user = await client.db("capstone").collection("users").find({ "email": email }).toArray();
   let userId = user[0]._id;
-  if(likedList.filter((el)=>el.toString() == userId.toString()).length > 0){
+  if (likedList.filter((el) => el.toString() == userId.toString()).length > 0) {
     liked = false
-    likedList = likedList.filter((el)=> el.toString() != userId.toString());
-    likes  -= 1
-  } else if(dislikedList.filter((el)=>el.toString() == userId.toString()).length > 0){
+    likedList = likedList.filter((el) => el.toString() != userId.toString());
+    likes -= 1
+  } else if (dislikedList.filter((el) => el.toString() == userId.toString()).length > 0) {
     liked = true
     likedList.push(ObjectId(userId));
     likes += 1;
     disliked = false
-    dislikedList = dislikedList.filter((el)=> el.toString() != userId.toString());
+    dislikedList = dislikedList.filter((el) => el.toString() != userId.toString());
     dislikes -= 1;
   } else {
     liked = true;
@@ -401,7 +427,7 @@ app.put("/commentLikes", async (request, response) => {
     likes += 1;
   }
   const result = await client.db("capstone").collection("users").updateOne({
-    "posts.commentDetails": {$elemMatch:{commentId:{$in:[ObjectId(commentId), commentId]}}}
+    "posts.commentDetails": { $elemMatch: { commentId: { $in: [ObjectId(commentId), commentId] } } }
   },
     {
       $set: {
@@ -411,17 +437,19 @@ app.put("/commentLikes", async (request, response) => {
         "posts.$[updatePost].commentDetails.$[updatecommentDetails].dislikedList": dislikedList,
       }
     },
-    {"arrayFilters":[
-      {"updatePost.postId":{$in:[ObjectId(postId), postId]}},
-      {"updatecommentDetails.commentId":{$in:[ObjectId(commentId), commentId]}}
-    ]});
-    response.send(result);
+    {
+      "arrayFilters": [
+        { "updatePost.postId": { $in: [ObjectId(postId), postId] } },
+        { "updatecommentDetails.commentId": { $in: [ObjectId(commentId), commentId] } }
+      ]
+    });
+  response.send(result);
 });
 app.put("/commentDislikes", async (request, response) => {
   const { commentDetails, postId, email } = request.body;
   let likes = commentDetails.likes;
   let dislikes = commentDetails.dislikes;
-  let liked =false;
+  let liked = false;
   let disliked = false;
   let likedList = commentDetails.likedList;
   let dislikedList = commentDetails.dislikedList;
@@ -429,13 +457,13 @@ app.put("/commentDislikes", async (request, response) => {
   const client = await createConnection();
   const user = await client.db("capstone").collection("users").find({ "email": email }).toArray();
   let userId = user[0]._id;
-  if(dislikedList.filter((el)=>el.toString() == userId.toString()).length > 0){
+  if (dislikedList.filter((el) => el.toString() == userId.toString()).length > 0) {
     disliked = false;
-    dislikedList =dislikedList.filter((el)=> el.toString() != userId.toString());
-    dislikes  -= 1;
-  } else if(likedList.filter((el)=>el.toString() == userId.toString()).length > 0){
+    dislikedList = dislikedList.filter((el) => el.toString() != userId.toString());
+    dislikes -= 1;
+  } else if (likedList.filter((el) => el.toString() == userId.toString()).length > 0) {
     liked = false;
-    likedList = likedList.filter((el)=> el.toString() != userId.toString());
+    likedList = likedList.filter((el) => el.toString() != userId.toString());
     likes -= 1;
     disliked = true;
     dislikedList.push(userId);
@@ -446,7 +474,7 @@ app.put("/commentDislikes", async (request, response) => {
     dislikes += 1;
   }
   const result = await client.db("capstone").collection("users").updateOne({
-    "posts.commentDetails": {$elemMatch:{commentId:{$in:[ObjectId(commentId), commentId]}}}
+    "posts.commentDetails": { $elemMatch: { commentId: { $in: [ObjectId(commentId), commentId] } } }
   },
     {
       $set: {
@@ -456,11 +484,13 @@ app.put("/commentDislikes", async (request, response) => {
         "posts.$[updatePost].commentDetails.$[updatecommentDetails].dislikedList": dislikedList,
       }
     },
-    {"arrayFilters":[
-      {"updatePost.postId":{$in:[ObjectId(postId), postId]}},
-      {"updatecommentDetails.commentId":{$in:[ObjectId(commentId), commentId]}}
-    ]});
-    response.send(result);
+    {
+      "arrayFilters": [
+        { "updatePost.postId": { $in: [ObjectId(postId), postId] } },
+        { "updatecommentDetails.commentId": { $in: [ObjectId(commentId), commentId] } }
+      ]
+    });
+  response.send(result);
 
 });
 app.put("/replies", async (request, response) => {
@@ -475,21 +505,23 @@ app.put("/replies", async (request, response) => {
   let lastName = user[0].lastName;
   const userPicFile = await client.db("capstone").collection("profileUploads.files").find({ "_id": userPicId }).toArray();
   let finalPicFile = "";
-  if (userPicFile.length > 0){
+  if (userPicFile.length > 0) {
     const userPicChunks = await client.db("capstone").collection('profileUploads.chunks')
-    .find({ "files_id": userPicId}).toArray();
+      .find({ "files_id": userPicId }).toArray();
     let pictureFileData = [];
-      for (let i = 0; i < userPicChunks.length; i++) {
-        pictureFileData.push(userPicChunks[i].data.toString('base64'));
-      }
-      finalPicFile = 'data:' + userPicFile[0].contentType + ';base64,'+ pictureFileData.join('');
+    for (let i = 0; i < userPicChunks.length; i++) {
+      pictureFileData.push(userPicChunks[i].data.toString('base64'));
+    }
+    finalPicFile = 'data:' + userPicFile[0].contentType + ';base64,' + pictureFileData.join('');
   }
-  oldReplyDetails.push({firstName:firstName, lastName:lastName, picture:finalPicFile,userId:user[0]._id, commentId:commentId,
-   replyId:ObjectId(), replyDate:new Date().toLocaleString(), reply:reply, 
-   likes:0, dislikes:0, liked:[], disliked:[], replies:0, replyDetails:[]});
+  oldReplyDetails.push({
+    firstName: firstName, lastName: lastName, picture: finalPicFile, userId: user[0]._id, commentId: commentId,
+    replyId: ObjectId(), replyDate: new Date().toLocaleString(), reply: reply,
+    likes: 0, dislikes: 0, liked: [], disliked: [], replies: 0, replyDetails: []
+  });
 
   const result = await client.db("capstone").collection("users").updateOne({
-     "posts.commentDetails": {$elemMatch:{commentId:{$in:[ObjectId(commentId), commentId]}}}
+    "posts.commentDetails": { $elemMatch: { commentId: { $in: [ObjectId(commentId), commentId] } } }
   },
     {
       $set: {
@@ -497,57 +529,60 @@ app.put("/replies", async (request, response) => {
         "posts.$[updatePost].commentDetails.$[updatecommentDetails].replyDetails": oldReplyDetails,
       }
     },
-    {"arrayFilters":[
-      {"updatePost.postId":{$in:[ObjectId(postId), postId]}},
-      {"updatecommentDetails.commentId":{$in:[ObjectId(commentId), commentId]}}
-    ]});
-    response.send(result);
+    {
+      "arrayFilters": [
+        { "updatePost.postId": { $in: [ObjectId(postId), postId] } },
+        { "updatecommentDetails.commentId": { $in: [ObjectId(commentId), commentId] } }
+      ]
+    });
+  response.send(result);
 });
 app.put("/deletePost", async (request, response) => {
-  const { user, postname, adress } = request.body;
+  const { email, post } = request.body;
   const client = await createConnection();
   const result = await client.db("capstone").collection("users")
     .updateOne({
-      email: user
+      email: email
     },
       {
         $pull: {
           "posts": {
-            postname: postname,
-            adress: adress
+            postId: post.postId
           }
         }
       });
   response.send(result);
 });
-app.put("/updatePost", async (request, response) => {
-  const { newpostName, newAdress, oldpostName, oldAdress, user } = request.body;
+app.put("/deleteComment", async (request, response) => {
+  const { email, commentDetails, post } = request.body;
+  let commentId = commentDetails.commentId;
+  let postId = post.postId;
   const client = await createConnection();
-  const result1 = await client.db("capstone").collection("users")
+  const result = await client.db("capstone").collection("users")
     .updateOne({
-      email: user
+      "posts.postId": ObjectId(postId)
     },
       {
         $pull: {
-          "posts": {
-            postname: oldpostName,
-            adress: oldAdress
-          }
+          "posts.$.commentDetails": { "commentId": { $in: [ObjectId(commentId), commentId] } },
         }
-      });
-  const result2 = await client.db("capstone").collection("users")
+
+      }
+    );
+    if(result.modifiedCount == 1){
+      await client.db("capstone").collection("users")
     .updateOne({
-      email: user
+      "posts.postId": ObjectId(postId)
     },
       {
-        $push: {
-          "posts": {
-            postname: newpostName,
-            adress: newAdress
-          }
+        $set: {
+          "posts.$.comments": post.comments - 1,
         }
-      });
-  response.send("updated");
+
+      }
+    );
+    }
+  response.send(result);
 });
 app.use("/", router1);
 app.listen(PORT, () => console.log("The server is started"));
