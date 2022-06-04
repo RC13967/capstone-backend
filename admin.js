@@ -8,19 +8,19 @@ router1.post("/getUser", async (request, response) => {
   const { email, password } = request.body;
   const client = await createConnection();
   const user = await client.db("capstone").collection("users").find({ email: email }).toArray();
-  var profileFile = await client.db("capstone").collection('profileUploads.files')
-      .find({ "_id": user[0].picture }).toArray();
-      let finalFile = "";
-    if (profileFile.length > 0) {
-        var chunks = await client.db("capstone").collection('profileUploads.chunks')
-      .find({ "files_id": user[0].picture }).sort({ n: 1 }).toArray();
-      let profileData = [];
-      for (let j = 0; j < chunks.length; j++) {
-        profileData.push(chunks[j].data.toString('base64'));
-      }
-      finalFile = 'data:' + profileFile[0].contentType + ';base64,'+ profileData.join('');
-    }
   if (user.length > 0) {
+    var profileFile = await client.db("capstone").collection('profileUploads.files')
+    .find({ "_id": user[0].picture }).toArray();
+    let finalFile = "";
+  if (profileFile.length > 0) {
+      var chunks = await client.db("capstone").collection('profileUploads.chunks')
+    .find({ "files_id": user[0].picture }).sort({ n: 1 }).toArray();
+    let profileData = [];
+    for (let j = 0; j < chunks.length; j++) {
+      profileData.push(chunks[j].data.toString('base64'));
+    }
+    finalFile = 'data:' + profileFile[0].contentType + ';base64,'+ profileData.join('');
+  }
     const passwordstoredindb = user[0].password;
     const loginFormPassword = password;
     const ispasswordmatch = await bcrypt.compare(loginFormPassword, passwordstoredindb);
