@@ -18,11 +18,10 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static('public'));
-const MONGO_URL = 'mongodb://localhost';
 const PORT = process.env.PORT;
-// const MONGO_URL = process.env.MONGO_URL;
+const MONGO_URL = process.env.MONGO_URL;
 const storage = new GridFsStorage({
-  url: 'mongodb://localhost:27017/capstone',
+  url: `${MONGO_URL}/capstone`,
   options: { useNewUrlParser: true, useUnifiedTopology: true },
   file: (req, file) => {
     return {
@@ -33,7 +32,7 @@ const storage = new GridFsStorage({
 });
 const upload = multer({ storage });
 const storageProfile = new GridFsStorage({
-  url: 'mongodb://localhost:27017/capstone',
+  url: `${MONGO_URL}/capstone`,
   options: { useNewUrlParser: true, useUnifiedTopology: true },
   file: (req, profileFile) => {
     return {
@@ -129,13 +128,6 @@ app.post("/globalPosts", async (request, response) => {
 
     response.send(posts);
   }
-  // var db = client.db('capstone');
-  // var gfs = Grid(db, mongo);
-
-  // const file =  gfs.files.findOne({ _id:user[0].posts[0].id });
-  //       const readStream = gfs.createReadStream(user[0].posts[0].postId);
-  //       readStream.pipe(response);
-
 });
 app.post("/myPosts", async (request, response) => {
   const { email } = request.body;
@@ -201,12 +193,6 @@ app.post("/myPosts", async (request, response) => {
   } else {
     response.send({});
   }
-  // var db = client.db('capstone');
-  // var gfs = Grid(db, mongo);
-
-  // const file =  gfs.files.findOne({ _id:user[0].posts[0].id });
-  //       const readStream = gfs.createReadStream(user[0].posts[0].postId);
-  //       readStream.pipe(response);
 
 });
 app.put("/addPost", upload.single("file"), async (request, response) => {

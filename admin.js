@@ -47,7 +47,7 @@ router1.post("/checkUserEmail", async (request, response) => {
 router1.post("/UserSignUp", async (request, response) => {
   const { email, password, firstName, lastName } = request.body;
   const token = jwt.sign({ email: email }, process.env.MY_SECRET_KEY);
-  const url = `http://localhost:3000/activateuser/${email}/${token}`;
+  const url = `https://capstone-ranjith.netlify.app/activateuser/${email}/${token}`;
   const client = await createConnection();
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
@@ -123,7 +123,7 @@ router1.post("/forgotUser", async (request, response) => {
       from: 'ranjithch137@gmail.com',
       to: email,
       subject: 'Reset Password link',
-      html: '<a href = "http://localhost:3000/retrieveUser/' + email + '/' + token + '"> Reset Password Link</a>'
+      html: '<a href = "https://capstone-ranjith.netlify.app/retrieveUser/' + email + '/' + token + '"> Reset Password Link</a>'
     };
     transporter.sendMail(mailOptions, async function (err, data) {
       if (err) {
